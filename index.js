@@ -1,16 +1,58 @@
-module.exports = {
-	compare: function()
+var process = require('child_process');
+var Promise = require('promise');
+
+module.exports = function()
+{
+	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+	 *                     Private Members                     *
+	 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+	var registry = [];
+
+	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+	 *                      Public Members                     *
+	 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+	var compare = function(f1, f2, config)
 	{
-		try
+		var promise = new Promise(function(resolve, reject)
 		{
-			console.log("lemmons");
-		}
+			if (!f1 || !f2)
+			{
+				reject('Must enter 2 valid functions for comparison')
+			}
 
-		catch (err)
-		{
-			console.log(err);
-		}
+			try
+			{
+				var worker = process.fork(__dirname + "/worker.js", [f1.toString(), f2.toString()]);
 
-		return true;
+				worker.on('close', function(code)
+				{
+					if (code == 99)
+					{
+						resolve('inequal functions')
+					}
+					else if (code == 0)
+					{
+						resolve('equal function')
+					}
+				});
+
+			}
+
+			catch (err)
+			{
+				console.log(err);
+			}
+		});
+
+		return promise;
 	}
-}
+
+	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+	 *                          Expose                         *
+	 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+	return {
+		compare: compare
+	}
+
+}()
